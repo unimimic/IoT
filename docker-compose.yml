@@ -1,0 +1,58 @@
+version: "3.7"
+
+services:
+  nodered:
+    image: nodered/node-red:latest
+    container_name: nodered
+    environment:
+      - TZ=Europe/Amsterdam
+    ports:
+      - "1880:1880"
+    networks:
+      - node-red-net
+      - mongo_net
+    volumes:
+      - ./node-red-data:/data
+    depends_on:
+      - mongodb
+
+  mosquitto:
+    image: eclipse-mosquitto
+    hostname: mosquitto
+    container_name: mosquitto
+    ports:
+      - "1883:1883" #default mqtt port
+      - "9001:9001" #default mqtt port for websockets
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    restart: unless-stopped
+    networks:
+      - node-red-net
+
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    restart: always
+    command: --auth --config /etc/mongo/mongod.conf
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: adminpw
+      MONGO_INITDB_DATABASE: mydb
+      TZ: Asia/Taipei
+    volumes: 
+      - ./mongodb/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - ./mongodb/configdb:/data/configdb
+      - ./mongodb/data:/data/db
+      - ./mongodb/mongod.conf:/etc/mongo/mongod.conf
+    ports: 
+      - '27017:27017'
+    networks:
+      - mongo_net
+    
+networks:
+  node-red-net:
+  mongo_net:
+    driver: bridge
+ 
